@@ -10,6 +10,18 @@ properties:
     type: string
     format: uri
     description: A publicly accessible Google Drive or Dropbox folder or file. 
+  project_id:
+    title: Project ID
+    type: integer
+    description: Project ID of the project you would like to upload the documents to. 
+  access_level:
+    title: Access level for uploaded documents
+    type: string
+    default: private
+    enum:
+      - private
+      - organization
+      - public
 required:
   - url
 categories:

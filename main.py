@@ -18,7 +18,7 @@ class Compress(AddOn):
         """The user must be a verified journalist to upload a document"""
         self.set_message("Checking permissions...")
         user = self.client.users.get("me")
-        if not user.verified_journalist:
+        if not user.verified_journalist: #pylint: disable=no-member
             self.set_message(
                 "You need to be verified to use this add-on. Please verify your "
                 "account here: https://airtable.com/shrZrgdmuOwW0ZLPM"
@@ -37,18 +37,26 @@ class Compress(AddOn):
         os.chdir("..")
 
     def compress_pdf(self, file_path, no_ext):
-        """ Uses ghostscript to compress the PDF"""
+        """Uses ghostscript to compress the PDF"""
+        # pylint:disable = line-too-long
         bash_cmd = f"gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.5 -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH -sOutputFile={no_ext}-compressed.pdf {file_path};"
         subprocess.call(bash_cmd, shell=True)
 
     def main(self):
         """The main add-on functionality goes here."""
+        # pylint:disable=too-many-locals
         url = self.data.get("url")
+        access_level = self.data["access_level"]
+        project_id = self.data.get("project_id")
+        if project_id is not None:
+            kwargs = {"project": project_id}
+        else:
+            kwargs = {}
         self.check_permissions()
         self.fetch_files(url)
         successes = 0
         errors = 0
-        for current_path, folders, files in os.walk("./out/"):
+        for current_path, _folders, files in os.walk("./out/"):
             for file_name in files:
                 file_name = os.path.join(current_path, file_name)
                 self.set_message("Attempting to compress PDF files")
@@ -59,7 +67,8 @@ class Compress(AddOn):
                 except RuntimeError as runtime_error:
                     self.send_mail(
                         "Runtime Error for Compression AddOn",
-                        "Please forward this to info@documentcloud.org \n" + str(runtime_error),
+                        "Please forward this to info@documentcloud.org \n"
+                        + str(runtime_error),
                     )
                     errors += 1
                     continue
@@ -76,7 +85,9 @@ class Compress(AddOn):
                             "Uploading compressed file to DocumentCloud..."
                         )
                         self.client.documents.upload(
-                            f"{file_name_no_ext}-compressed.pdf"
+                            f"{file_name_no_ext}-compressed.pdf",
+                            access=access_level,
+                            **kwargs,
                         )
                         successes += 1
         sfiles = "file" if successes == 1 else "files"
